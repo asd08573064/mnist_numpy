@@ -19,14 +19,6 @@ y = to_categorical(y)
 
 x_train, x_val, y_train, y_val = train_test_split(x, y, test_size=0.15, random_state=42)
 
-import matplotlib.pyplot as plt
-import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
-print(np.reshape(x_val[[1090]], (28, 28)).shape)
-plt.imshow(np.reshape(x_val[[1090]], (28, 28)))
-print(x_val[1090])
-print(y_train[1090])
-
 import numpy as np
 
 
