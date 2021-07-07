@@ -1,4 +1,4 @@
-# mnist_numpy
+# mnist from scratch using numpy
 
 This is a Mnist classifier implemented with numpy. 
 
