@@ -7,61 +7,36 @@ Original file is located at
     https://colab.research.google.com/drive/1Ge-Kv__rNc5lF1ak8M0EytyMv6KbaEyH
 """
 import numpy as np
-import random
-
-from tqdm import tqdm
-from sklearn.model_selection import train_test_split
-from util.util import to_categorical
+from util.util import accuracy
+from data.dataset import get_mnist
 from util.activation import cross_entropy
 from network import NN
-from scipy.io import loadmat
 
 
-epochs = 20
-log_step = 200
+def main():
+    epochs = 20
+    log_step = 1000
+    x_train, x_val, y_train, y_val = get_mnist()
+    mnist_nn = NN(input_size = 784, hidden_1_size = 512, hidden_2_size = 256, output_size = 10)
 
-mnist = loadmat('./data/mnist-original.mat')
-x = mnist['data'].T
-x = (x/255.).astype('float32')
+    for epoch in range(epochs):
+        loss_ = []
+        for step, (image, label) in enumerate(zip(x_train, y_train)):
+            image = np.expand_dims(image, axis=1)  
+            label = np.expand_dims(label, axis=1)  
+            output = mnist_nn.forward(image)
+            loss = cross_entropy(output, label)
+            mnist_nn.backward(label)
+            mnist_nn.update()
+            loss_.append(loss)
+            
+            if step % log_step == 0:
+                print('[epoch {}/{}] step: {}/{}, loss: {}'.format(epoch, epochs, step, len(x_train), sum(loss_)/len(loss_)))
 
-y = mnist['label'].T.flatten()
-y = to_categorical(y)
-
-x_train, x_val, y_train, y_val = train_test_split(x, y, test_size=0.15, random_state=42)
-
-
-
-def accuracy(model, x, y):
-    correct = 0
-    for i in tqdm(range(y.shape[0])):
-        image = np.expand_dims(x[i], axis=1)
-        output = model.forward(image)
-        predicted_digit = np.argmax(output)
-        ground_digit = np.argmax(y[i])
-        if predicted_digit == ground_digit:
-            correct += 1
-    return correct/y.shape[0]
-
-
-
-mnist_nn = NN(input_size = 784, hidden_1_size = 256, hidden_2_size = 128, output_size = 10)
-
-for epoch in range(epochs):
-    loss_ = []
-    for step, (image, label) in enumerate(zip(x_train, y_train)):
-        image = np.expand_dims(image, axis=1)  
-        label = np.expand_dims(label, axis=1)  
-        
-        output = mnist_nn.forward(image)
-        loss = cross_entropy(output, label)
-        loss_.append(loss)
-        mnist_nn.backward(label)
-        mnist_nn.update()
-        
-        if step % log_step == 0:
-            print('epoch: {} step: {}/{}, loss: {}'.format(epoch, step, len(x_train), sum(loss_)/len(loss_)))
-
-    print('epoch:', epoch)
-    acc = accuracy(mnist_nn, x_val, y_val)
-    epoch_loss = sum(loss_)/len(loss_)
-    print('acc: {}, loss: {}'.format(acc, epoch_loss))
+        test_acc = accuracy(mnist_nn, x_val, y_val)
+        train_acc = accuracy(mnist_nn, x_train, y_train)
+        epoch_loss = sum(loss_)/len(loss_)
+        print('train acc: {}, test acc: {}, loss: {}'.format(train_acc, test_acc, epoch_loss))
+    
+if __name__ == '__main__':
+    main()

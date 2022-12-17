@@ -1,5 +1,16 @@
 import numpy as np
 
+def accuracy(model, x, y):
+    correct = 0
+    for i in range(y.shape[0]):
+        image = np.expand_dims(x[i], axis=1)
+        output = model.forward(image)
+        predicted_digit = np.argmax(output)
+        ground_digit = np.argmax(y[i])
+        if predicted_digit == ground_digit:
+            correct += 1
+    return correct/y.shape[0]
+
 def to_categorical(y, num_classes=None, dtype="float32"):
     """Converts a class vector (integers) to binary class matrix.
     E.g. for use with `categorical_crossentropy`.
