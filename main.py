@@ -9,6 +9,7 @@ Original file is located at
 import numpy as np
 import random
 
+from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 from util.util import to_categorical
 from util.activation import cross_entropy
@@ -17,7 +18,7 @@ from scipy.io import loadmat
 
 
 epochs = 20
-log_step = 50
+log_step = 200
 
 mnist = loadmat('./data/mnist-original.mat')
 x = mnist['data'].T
@@ -32,26 +33,22 @@ x_train, x_val, y_train, y_val = train_test_split(x, y, test_size=0.15, random_s
 
 def accuracy(model, x, y):
     correct = 0
-    for i in range(y.shape[0]):
-        index = model.forward(x[i])
-        one_hot = 0
-        for digit in range(y[i].shape[0]):
-            predict = np.argmax(index)
-            if y[i][digit] == 1:
-                one_hot = digit
-                break
-        if predict == one_hot:
+    for i in tqdm(range(y.shape[0])):
+        image = np.expand_dims(x[i], axis=1)
+        output = model.forward(image)
+        predicted_digit = np.argmax(output)
+        ground_digit = np.argmax(y[i])
+        if predicted_digit == ground_digit:
             correct += 1
     return correct/y.shape[0]
 
 
 
-mnist_nn = NN(input_size = 784, hidden_1_size = 700, hidden_2_size = 700,output_size = 10)
+mnist_nn = NN(input_size = 784, hidden_1_size = 256, hidden_2_size = 128, output_size = 10)
 
 for epoch in range(epochs):
     loss_ = []
-    step = 0
-    for image, label in zip(x_train, y_train):
+    for step, (image, label) in enumerate(zip(x_train, y_train)):
         image = np.expand_dims(image, axis=1)  
         label = np.expand_dims(label, axis=1)  
         
@@ -63,7 +60,6 @@ for epoch in range(epochs):
         
         if step % log_step == 0:
             print('epoch: {} step: {}/{}, loss: {}'.format(epoch, step, len(x_train), sum(loss_)/len(loss_)))
-        step+=1
 
     print('epoch:', epoch)
     acc = accuracy(mnist_nn, x_val, y_val)
