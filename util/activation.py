@@ -1,7 +1,9 @@
 import numpy as np
 
+
+
 def Sigmoid(z):
-        return np.clip(1 / (1.0 + np.exp(-z)), 1e-8, 1 - (1e-7))
+    return np.clip(1 / (1.0 + np.exp(-z)), 1e-8, 1 - (1e-7))
 
 def Softmax(z):
     z = z - np.max(z)
