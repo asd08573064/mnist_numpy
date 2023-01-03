@@ -4,26 +4,29 @@ from util.util import to_categorical
 from sklearn.model_selection import train_test_split
 
 class dataset:
-    def __init__(self, batch_size=64, X=None, Y=None):
+    def __init__(self, X=None, Y=None, batch_size=256):
         self.max_num = len(X)//batch_size
-        self.index = 0
+        self.index = -1
         self.X = X
         self.Y = Y
-        self.item = zip(X, Y)
         self.batch_size = batch_size
 
     def __iter__(self):
         return self
+    
+    def __len__(self):
+        return len(self.X)
         
     def __next__(self):
-        self.index += 1
         if self.index < self.max_num:
             if self.batch_size == 1:
                 index = self.index
             else:
                 index = np.random.choice(len(self.X), size=self.batch_size, replace=False)
-            return self.X[index], self.Y[index]
+            self.index += 1         
+            return np.squeeze(self.X[index]), self.Y[index]
         else:
+            self.index = 0
             raise StopIteration
         
 def get_mnist():

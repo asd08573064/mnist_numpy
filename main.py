@@ -8,33 +8,34 @@ Original file is located at
 """
 import numpy as np
 from util.util import accuracy
-from data.dataset import get_mnist
+from data.dataset import get_mnist, dataset
 from util.activation import cross_entropy
 from network import NN
 
 
 def main():
     epochs = 20
-    log_step = 1000
+    log_step = 100
+    batch_size = 64
     x_train, x_val, y_train, y_val = get_mnist()
-    mnist_nn = NN(input_size = 784, hidden_1_size = 512, hidden_2_size = 256, output_size = 10)
+    mnist_nn = NN(input_size = 784, output_size = 10)
+    train_dataset = dataset(x_train, y_train, batch_size=batch_size)
+    test_dataset = dataset(x_val, y_val, batch_size=batch_size)
 
     for epoch in range(epochs):
         loss_ = []
-        for step, (image, label) in enumerate(zip(x_train, y_train)):
-            image = np.expand_dims(image, axis=1)  
-            label = np.expand_dims(label, axis=1)  
+        for step, (image, label) in enumerate(train_dataset):
             output = mnist_nn.forward(image)
-            loss = cross_entropy(output, label)
+            loss = cross_entropy(output.T, label)
             mnist_nn.backward(label)
             mnist_nn.update()
-            loss_.append(loss)
-            
+            loss_.append(loss) 
             if step % log_step == 0:
-                print('[epoch {}/{}] step: {}/{}, loss: {}'.format(epoch, epochs, step, len(x_train), sum(loss_)/len(loss_)))
-
-        test_acc = accuracy(mnist_nn, x_val, y_val)
-        train_acc = accuracy(mnist_nn, x_train, y_train)
+                print('[epoch {}/{}] step: {}/{}, loss: {}'.format(epoch, epochs, step, len(x_train)//batch_size, sum(loss_)/len(loss_)))
+                
+        mnist_nn.schduler_step(epoch=epochs)
+        test_acc = accuracy(mnist_nn, test_dataset)
+        train_acc = accuracy(mnist_nn, train_dataset)
         epoch_loss = sum(loss_)/len(loss_)
         print('train acc: {}, test acc: {}, loss: {}'.format(train_acc, test_acc, epoch_loss))
     

@@ -1,15 +1,14 @@
 import numpy as np
 
-def accuracy(model, x, y):
+def accuracy(model, dataset):
     correct = 0
-    for i in range(y.shape[0]):
-        image = np.expand_dims(x[i], axis=1)
-        output = model.forward(image)
-        predicted_digit = np.argmax(output)
-        ground_digit = np.argmax(y[i])
-        if predicted_digit == ground_digit:
-            correct += 1
-    return correct/y.shape[0]
+    for x, y in dataset:
+        output = model.forward(x)
+        predicted_digit = np.argmax(output, axis=0)
+        ground_digit = np.argmax(y, axis=1)
+        # print('pred:', predicted_digit)
+        correct += np.sum(predicted_digit == ground_digit)
+    return correct/len(dataset)
 
 def to_categorical(y, num_classes=None, dtype="float32"):
     """Converts a class vector (integers) to binary class matrix.
