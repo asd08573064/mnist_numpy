@@ -9,14 +9,14 @@ Original file is located at
 import numpy as np
 from util.util import accuracy
 from data.dataset import get_mnist, dataset
-from util.activation import cross_entropy
-from network import NN
+from util.activation import Cross_Entropy
+from model import NN
 
 
 def main():
     epochs = 20
     log_step = 100
-    batch_size = 64
+    batch_size = 16
     x_train, x_val, y_train, y_val = get_mnist()
     mnist_nn = NN(input_size = 784, output_size = 10)
     train_dataset = dataset(x_train, y_train, batch_size=batch_size)
@@ -26,7 +26,7 @@ def main():
         loss_ = []
         for step, (image, label) in enumerate(train_dataset):
             output = mnist_nn.forward(image)
-            loss = cross_entropy(output.T, label)
+            loss = Cross_Entropy(output.T, label)
             mnist_nn.backward(label)
             mnist_nn.update()
             loss_.append(loss) 

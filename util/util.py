@@ -6,7 +6,6 @@ def accuracy(model, dataset):
         output = model.forward(x)
         predicted_digit = np.argmax(output, axis=0)
         ground_digit = np.argmax(y, axis=1)
-        # print('pred:', predicted_digit)
         correct += np.sum(predicted_digit == ground_digit)
     return correct/len(dataset)
 
