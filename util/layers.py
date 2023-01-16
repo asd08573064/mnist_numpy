@@ -1,26 +1,49 @@
 import numpy as np
 
 class Batch_Norm():
-    def __init__(self, in_dim, out_dim):
-        self.in_dim = in_dim
-        self.out_dim = out_dim
+    def __init__(self):
         self.gamma = 0
         self.beta = 0
-        self.cache = {}
+        self.cache = {
+            'd_gamma_cache' : 1,
+            'd_beta_cache' : 0
+        }
+        self.running_mu = .0
+        self.running_var = 1.
         
-    def forward(self, x):
-        epsilon = 1e-9
-        self.mu = np.mean(x, axis=0)
-        self.var = np.var(x, axis=0)
-        self.x_hat = (x - self.mu) / (np.sqrt(self.var) + epsilon)
-        self.y = self.gamma * self.x_hat + self.beta
+    def forward(self, x, is_training=True, Beta=0.1):
+        eps = 1e-9
+        if is_training:
+            self.mu = np.mean(x, axis=0)
+            self.var = np.var(x, axis=0)
+            self.x_hat = (x - self.mu) / np.sqrt(self.var + eps)
+            self.y = self.gamma * self.x_hat + self.beta
+            
+            self.running_mu = Beta * self.running_mu + (1. - Beta) * self.mu
+            self.running_var = Beta * self.running_var + (1. - Beta) * self.var
+            
+        else:
+            self.x_hat = (x - self.running_mu) / np.sqrt(self.running_var + eps)
+            self.y = self.gamma * self.x_hat + self.beta
+        
         return self.y
     
     def backward(self, da):
-        self.cache['d_beta'] = np.sun(da, axis=0)
-        self.cache['d_gamma'] = np.sun(da * self.x_hat, axis=0)
-        self.cache['d_x'] = 0
-        # TBD
+        eps = 1e-9
+        batch_size = da.shape[0]
+        self.cache['d_beta'] = np.sum(da, axis=0)
+        self.cache['d_gamma'] = np.sum(da * self.x_hat, axis=0)
+        d_x_hat = self.gamma * da
+        self.cache['d_x'] = (1./batch_size) * (batch_size * d_x_hat - np.sum(d_x_hat, axis=0) - self.x_hat * np.sum(d_x_hat * self.x_hat, axis=0))/(batch_size * np.sqrt(self.var + eps))
+        return self.cache['d_x']
+    
+    def update(self, learning_rate, Beta=0.95):
+        self.beta = self.beta - learning_rate * (Beta*self.cache['d_beta_cache'] + (1-Beta) * self.cache['d_beta'])
+        self.gamma = self.gamma - learning_rate * (Beta*self.cache['d_gamma_cache'] + (1-Beta) * self.cache['d_gamma'])
+        self.cache['d_gamma_cache'] = self.cache['d_gamma']
+        self.cache['d_beta_cache'] = self.cache['d_beta']
+
+    
 
 class Linear():
     def __init__(self, in_dim, out_dim, bias=True):
@@ -57,5 +80,4 @@ class Linear():
             
         self.weight = self.weight - learning_rate * (Beta*self.cache['w_grad_cache'] + (1-Beta) * self.cache['w_grad'])
         self.cache['w_grad_cache'] = self.cache['w_grad']
-        
-    
+

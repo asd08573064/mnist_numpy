@@ -16,7 +16,7 @@ from model import NN
 def main():
     epochs = 20
     log_step = 100
-    batch_size = 16
+    batch_size = 64
     x_train, x_val, y_train, y_val = get_mnist()
     mnist_nn = NN(input_size = 784, output_size = 10)
     train_dataset = dataset(x_train, y_train, batch_size=batch_size)
