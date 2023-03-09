@@ -1,4 +1,71 @@
 import numpy as np
+import util.activation as A
+
+class Dropout():
+    def __init__():
+        pass
+    def forward(self, x):
+        pass
+    def backward(self, x):
+        pass
+    
+class ReLU():
+    def __init__(self):
+        self.output = None
+        self.input = None
+    
+    def forward(self, x):
+        self.input = x
+        self.output = A.Relu(x)
+        return self.output
+    
+    def backward(self, x, grad=None):
+        if grad is not None:
+            return grad * A.Relu(x, derivative=True)
+        return A.Relu(x, derivative=True)
+    
+class Softmax():
+    def __init__(self):
+        self.output = None
+        self.input = None
+    
+    def forward(self, x):
+        self.input = x
+        self.output = A.Softmax(self.input)
+        return self.output
+    
+    def backward(self, grad=None):
+        if grad is not None:
+            return grad * A.Softmax(self.output, derivative=True)
+        return A.Softmax(self.output, derivative=True)
+    
+class Sigmoid():
+    def __init__(self):
+        self.output = None
+        self.input = None
+    def forward(self, x):
+        self.input = x
+        self.output = A.Sigmoid(x)
+        return self.output
+    
+    def backward(self, grad=None):
+        if grad is not None:
+            return grad * A.Sigmoid(self.input, derivative=True)
+        return A.Sigmoid(self.input, derivative=True)
+    
+class Cross_Entropy():
+    def __init__(self):
+        self.output = None
+        self.input = None
+    def forward(self, Y, Y_prediction):
+        self.output = A.Cross_Entropy(Y, Y_prediction)
+        self.input = Y
+        return self.output
+    
+    def backward(self, Y_prediction, grad=None):
+        if grad is not None:
+            return grad * A.Cross_Entropy(self.input, Y_prediction, derivative=True)
+        return A.Cross_Entropy(self.input, Y_prediction, derivative=True)
 
 class Batch_Norm():
     def __init__(self):
@@ -10,9 +77,11 @@ class Batch_Norm():
         }
         self.running_mu = .0
         self.running_var = 1.
+        self.input = None
         
     def forward(self, x, is_training=True, Beta=0.1):
         eps = 1e-9
+        self.input = x
         if is_training:
             self.mu = np.mean(x, axis=0)
             self.var = np.var(x, axis=0)
@@ -51,6 +120,7 @@ class Linear():
         if bias:
             self.has_bias = True
             self.bias = np.zeros((out_dim, 1))
+        
         self.cache = {
                       'w_grad_cache' : np.zeros((out_dim, in_dim)),
                       'b_grad_cache' : np.zeros((out_dim, 1))
@@ -67,11 +137,15 @@ class Linear():
     
         return self.cache['z']
 
-    def backward(self, da, a_pre):
-        batch_size = da.shape[0]
-        self.cache['w_grad'] = (1./batch_size) * da @ a_pre
+    def backward(self, dz):
+        batch_size = dz.shape[0]
+        self.cache['w_grad'] = (1./batch_size) * dz @ self.cache['x'].T
         if self.has_bias:
-            self.cache['b_grad'] = (1./batch_size) * np.sum(da, axis=1, keepdims=True)
+            self.cache['b_grad'] = (1./batch_size) * np.sum(dz, axis=1, keepdims=True)
+            
+        return self.weight.T @ dz
+        
+        
     
     def update(self, learning_rate, Beta=0.95):
         if self.has_bias:

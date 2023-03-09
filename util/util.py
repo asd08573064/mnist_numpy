@@ -3,6 +3,7 @@ import numpy as np
 def accuracy(model, dataset):
     correct = 0
     for x, y in dataset:
+        x = x.T
         output = model.forward(x)
         predicted_digit = np.argmax(output, axis=0)
         ground_digit = np.argmax(y, axis=1)

@@ -21,6 +21,7 @@ def Softmax(x, derivative=False):
         return exps / np.sum(exps, axis=0)
 
 def Cross_Entropy(Y, Y_prediction, derivative=False):
+    # print(Y.shape, Y_prediction.shape)
     if derivative:
         return (Y-Y_prediction)/(Y*(1.-Y) + 1e-07)
     else:  
