@@ -36,3 +36,11 @@ def get_mnist():
     y = mnist['label'].T.flatten()
     y = to_categorical(y)
     return train_test_split(x, y, test_size=0.15, random_state=42)
+
+# def get_mnist():
+#     mnist = loadmat('./data/mnist-original.mat')
+#     x = mnist['data'].T
+#     x = ((x-127.5)/127.5).astype('float32')
+#     y = mnist['label'].T.flatten()
+#     y = to_categorical(y)
+#     return train_test_split(x, y, test_size=0.15, random_state=42)

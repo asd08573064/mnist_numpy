@@ -9,6 +9,21 @@ class Dropout():
     def backward(self, x):
         pass
     
+class LeakyRelu():
+    def __init__(self):
+        self.output = None
+        self.input = None
+    
+    def forward(self, x):
+        self.input = x
+        self.output = A.leakyrelu(x)
+        return self.output
+    
+    def backward(self, grad=None):
+        if grad is not None:
+            return grad * A.leakyrelu(self.input, derivative=True)
+        return A.leakyrelu(self.input, derivative=True)
+    
 class ReLU():
     def __init__(self):
         self.output = None
@@ -16,13 +31,13 @@ class ReLU():
     
     def forward(self, x):
         self.input = x
-        self.output = A.Relu(x)
+        self.output = A.relu(x)
         return self.output
     
-    def backward(self, x, grad=None):
+    def backward(self, grad=None):
         if grad is not None:
-            return grad * A.Relu(x, derivative=True)
-        return A.Relu(x, derivative=True)
+            return grad * A.relu(self.input, derivative=True)
+        return A.relu(self.input, derivative=True)
     
 class Softmax():
     def __init__(self):
@@ -53,6 +68,20 @@ class Sigmoid():
             return grad * A.Sigmoid(self.input, derivative=True)
         return A.Sigmoid(self.input, derivative=True)
     
+class Tanh():
+    def __init__(self):
+        self.output = None
+        self.input = None
+    def forward(self, x):
+        self.input = x
+        self.output = A.Tanh(x)
+        return self.output
+    
+    def backward(self, grad=None):
+        if grad is not None:
+            return grad * A.Tanh(self.input, derivative=True)
+        return A.Tanh(self.input, derivative=True)
+    
 class Cross_Entropy():
     def __init__(self):
         self.output = None
@@ -66,6 +95,21 @@ class Cross_Entropy():
         if grad is not None:
             return grad * A.Cross_Entropy(self.input, Y_prediction, derivative=True)
         return A.Cross_Entropy(self.input, Y_prediction, derivative=True)
+
+class BinaryCrossEntropy():
+    def __init__(self):
+        self.output = None
+        self.input = None
+    def forward(self, Y, Y_prediction):
+        self.output = A.BinaryCrossEntropy(Y, Y_prediction)
+        self.input = Y
+        return self.output
+    
+    def backward(self, Y_prediction, grad=None):
+        if grad is not None:
+            return grad * A.BinaryCrossEntropy(self.input, Y_prediction, derivative=True)
+        return A.BinaryCrossEntropy(self.input, Y_prediction, derivative=True)
+
 
 class Batch_Norm():
     def __init__(self):
@@ -83,8 +127,8 @@ class Batch_Norm():
         eps = 1e-9
         self.input = x
         if is_training:
-            self.mu = np.mean(x, axis=0)
-            self.var = np.var(x, axis=0)
+            self.mu = np.mean(x, axis=1, keepdims=True)
+            self.var = np.var(x, axis=1, keepdims=True)
             self.x_hat = (x - self.mu) / np.sqrt(self.var + eps)
             self.y = self.cache['gamma'] * self.x_hat + self.cache['beta']            
             self.running_mu = Beta * self.running_mu + (1. - Beta) * self.mu
@@ -98,14 +142,14 @@ class Batch_Norm():
     def backward(self, da):
         eps = 1e-9
         batch_size = da.shape[0]
-        self.cache['d_grad_beta'] = np.sum(da, axis=0)
-        self.cache['d_grad_gamma'] = np.sum(da * self.x_hat, axis=0)
+        self.cache['d_grad_beta'] = np.sum(da)
+        self.cache['d_grad_gamma'] = np.sum(da * self.x_hat)
         d_x_hat = self.cache['gamma'] * da
         self.cache['d_x'] = (1./batch_size) * (batch_size * d_x_hat - np.sum(d_x_hat, axis=0) - self.x_hat * np.sum(d_x_hat * self.x_hat, axis=0))/(batch_size * np.sqrt(self.var + eps))
         return self.cache['d_x']
     
-    def update(self, learning_rate, Beta=0.95):
-        self.cache['beta']= self.cache['beta']- learning_rate * (Beta*self.cache['beta_grad_cache'] + (1-Beta) * self.cache['d_grad_beta'])
+    def update(self, learning_rate, Beta=0.5):
+        self.cache['beta'] = self.cache['beta']- learning_rate * (Beta*self.cache['beta_grad_cache'] + (1-Beta) * self.cache['d_grad_beta'])
         self.cache['gamma'] = self.cache['gamma'] - learning_rate * (Beta*self.cache['gamma_grad_cache'] + (1-Beta) * self.cache['d_grad_gamma'])
         self.cache['gamma_grad_cache'] = self.cache['d_grad_gamma']
         self.cache['beta_grad_cache'] = self.cache['d_grad_beta']
@@ -115,6 +159,8 @@ class Batch_Norm():
 class Linear():
     def __init__(self, in_dim, out_dim, bias=True):
         self.has_bias = bias
+        self.out_dim = out_dim
+        self.in_dim = in_dim
         self.cache = {
                       'w' : np.random.randn(out_dim, in_dim) * np.sqrt(1./in_dim),
                       'b' : np.zeros((out_dim, 1)),
@@ -139,14 +185,19 @@ class Linear():
             self.cache['b_grad'] = (1./batch_size) * np.sum(dz, axis=1, keepdims=True)
             
         return self.cache['w'].T @ dz
+
+    def init_cache(self):
+        self.cache = {
+            'w' : np.random.randn(self.out_dim, self.in_dim) * np.sqrt(1./self.in_dim),
+            'b' : np.zeros((self.out_dim, 1)),
+            'w_grad_cache' : np.zeros((self.out_dim, self.in_dim)),
+            'b_grad_cache' : np.zeros((self.out_dim, 1))
+        }
         
-        
-    
-    def update(self, learning_rate, Beta=0.95):
+    def update(self, learning_rate, Beta=0.5):
         if self.has_bias:
             self.cache['b'] = self.cache['b'] - learning_rate * (Beta*self.cache['b_grad_cache'] + (1-Beta) * self.cache['b_grad'])
             self.cache['b_grad_cache'] = self.cache['b_grad']
             
         self.cache['w'] = self.cache['w'] - learning_rate * (Beta*self.cache['w_grad_cache'] + (1-Beta) * self.cache['w_grad'])
         self.cache['w_grad_cache'] = self.cache['w_grad']
-
